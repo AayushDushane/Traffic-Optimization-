@@ -11,36 +11,79 @@ This project implements an adaptive traffic signal management system using YOLOv
 - **Traffic Analysis Summary**: A table displays the number of vehicles detected and the corresponding green light time for each uploaded image.
 - **Maximum Green Light Duration**: Displays the maximum green light duration among all directions.
 
-## Formula for Green Light Calculation
+## Optimized Formula for Green Time Calculation
 
-The green light duration for each direction is calculated using the following formula:
+Instead of a simple scaling formula, the green time is calculated using a weighted vehicle count and a realistic flow rate.
 
 ### Formula:
-\[
-\text{Green Time} = \frac{\text{Weighted Vehicle Count}}{\text{Dynamic Flow Rate}}
-\]
+
+The green light duration (`T_green`) is calculated using the following formula:
+
+T_green = max( (W_total_vehicles / R_flow), T_min )
+
 
 Where:
 
-- **Weighted Vehicle Count** is the sum of vehicle counts multiplied by their respective weights based on their type (e.g., car, truck, bike).
-- **Dynamic Flow Rate** is adjusted based on the vehicle count to dynamically optimize traffic flow.
-  
-The flow rate is adjusted using the formula:
+- `T_green` = Green signal duration (in seconds)
+- `W_total_vehicles` = Weighted vehicle count
+- `R_flow` = Flow rate (vehicles per second per lane)
+- `T_min` = Minimum green time (e.g., 10 seconds)
 
-\[
-\text{Dynamic Flow Rate} = \max(2.0, \text{Flow Rate} - \frac{\text{Weighted Vehicle Count}}{80})
-\]
+### Step-by-Step Calculation:
 
-- The **min_time** (minimum green light time) is set to 10 seconds.
-- The **max_time** (maximum green light time) is capped at 90 seconds.
+1. **Determine Weighted Vehicle Count**:
 
-### Weights for Vehicle Types:
-- **Car (2)**: 1.5
-- **Truck/Bus (3)**: 3
-- **Bike (5)**: 1
-- **Motorbike (7)**: 1
+   Assign different weights to each vehicle type:
 
-If an emergency vehicle (e.g., an ambulance) is detected, the green light time is increased to at least 40 seconds, regardless of the calculated green time.
+   - **Bike** = 1
+   - **Car** = 1.5
+   - **Truck/Bus** = 3
+   - **Emergency Vehicle** = Instant Green! 🚨
+
+   The formula for the total weighted vehicle count (`W_total_vehicles`) is:
+
+W_total_vehicles = (1 * bikes) + (1.5 * cars) + (3 * trucks/buses)
+
+2. **Estimate Road Flow Rate**:
+
+The flow rate (`R_flow`) should be estimated dynamically based on road type:
+
+- **Urban Roads**: 2-3 vehicles/sec
+- **Highways**: 4-6 vehicles/sec
+- **Narrow Lanes**: 1-2 vehicles/sec
+
+The flow rate can be adjusted dynamically based on historical traffic data.
+
+3. **Apply the Formula**:
+
+Example calculation:
+
+Suppose there are:
+
+- **5 bikes**
+- **10 cars**
+- **3 trucks/buses**
+
+The flow rate is **2.5 vehicles/sec**.
+
+The weighted vehicle count is:
+
+W_total_vehicles = (5 * 1) + (10 * 1.5) + (3 * 3) = 5 + 15 + 9 = 29
+
+The green time is calculated as:
+T_green = 29 / 2.5 = 11.6 ≈ 12 seconds
+
+
+However, the green light time should be between a **minimum of 10 seconds** and a **maximum of 90 seconds**. So in this case, the green time is **12 seconds**.
+
+4. **Emergency Vehicle Override**:
+
+If an emergency vehicle is detected (e.g., ambulance), the system will override the normal green time calculation and give **instant green** to prioritize the emergency vehicle.
+
+### Summary:
+
+- The formula dynamically adjusts the green light duration based on the total weighted vehicle count and the flow rate.
+- Emergency vehicles are given priority and instantly receive green light.
 
 ## Requirements
 
@@ -55,3 +98,7 @@ You can install the required dependencies using `pip`:
 
 ```bash
 pip install streamlit opencv-python ultralytics numpy
+
+
+
+
